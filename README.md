@@ -1,55 +1,63 @@
 # VisionFly SDK
 
-A lightweight SDK for VisionFly image optimization and transformation service. This SDK is designed to make your websites faster by handling image optimization, responsive images, and seamless CDN integration.
-
-## Features
-
-- ⚡ **Fast & Lightweight**: Minimal dependencies and optimized code
-- 🔄 **Responsive Images**: Automatic srcset generation for optimal image serving
-- 🖼️ **Advanced Transformations**: Resize, format conversion, quality, effects
-- 🛡️ **Secure**: Token-based authentication with automatic refresh
-- ⚛️ **React Ready**: Purpose-built components for React applications
-- 📱 **Next.js Integration**: Built-in support for Next.js Image component
-- 📈 **Performance Optimized**: URL caching and intelligent loading
-- 📤 **Upload Support**: Easily upload images to your VisionFly projects
+Official SDK for VisionFly Image API - Image optimization, transformation, and delivery.
 
 ## Installation
 
 ```bash
 npm install visionfly-sdk
-# or
-yarn add visionfly-sdk
 ```
 
-## Quick Start
+## Usage
 
-### JavaScript (Vanilla)
+### Core SDK
 
 ```javascript
-import VisionFly from "visionfly-sdk";
+import { VisionFly } from "visionfly-sdk";
 
-// Initialize the client
+// Initialize the SDK with your API key and secret
 const visionfly = new VisionFly({
   apiKey: "your-api-key",
   apiSecret: "your-api-secret",
+  baseUrl: "https://api.visionfly.ai", // optional
+  cdnUrl: "https://cdn.visionfly.ai", // optional
 });
 
 // Get an optimized image URL
-async function getOptimizedImage() {
-  const imageUrl = await visionfly.getImageUrl({
-    src: "https://example.com/image.jpg",
-    width: 800,
-    height: 600,
-    quality: 85,
-    format: "webp",
-  });
+const imageUrl = await visionfly.getImageUrl({
+  src: "https://example.com/image.jpg",
+  width: 800,
+  height: 600,
+  quality: 85,
+  format: "webp",
+  blur: 5,
+  sharpen: 10,
+  brightness: 10,
+  contrast: 15,
+  saturation: -10,
+  hue: 30,
+});
 
-  // Use the URL in your app
-  document.getElementById("myImage").src = imageUrl;
-}
+// Generate a responsive srcset
+const srcsetData = await visionfly.getSrcSet({
+  src: "https://example.com/image.jpg",
+  widths: [400, 800, 1200],
+  format: "webp",
+  quality: 80,
+});
+
+// Upload an image
+const uploadResult = await visionfly.uploadImage({
+  file: imageFile,
+  projectId: "your-project-id",
+  publicId: "optional-custom-id",
+});
+
+// Clear URL cache if needed
+visionfly.clearCache();
 ```
 
-### React
+### React Components
 
 ```jsx
 import React from "react";
@@ -106,212 +114,142 @@ function MyComponent() {
 }
 ```
 
-### Next.js
+## API Reference
 
-```jsx
-import React from "react";
-import {
-  VisionFlyProvider,
-  VFNextImage,
-  VFNextResponsiveImage,
-} from "visionfly-sdk/next";
+### Core SDK
 
-// Setup in _app.js or layout.js
-function MyApp({ Component, pageProps }) {
-  return (
-    <VisionFlyProvider
-      config={{
-        apiKey: "your-api-key",
-        apiSecret: "your-api-secret",
-      }}
-    >
-      <Component {...pageProps} />
-    </VisionFlyProvider>
-  );
-}
+#### VisionFly Constructor
 
-// Use in your pages/components
-function MyPage() {
-  return (
-    <div>
-      {/* Basic Next.js optimized image */}
-      <VFNextImage
-        src="https://example.com/image.jpg"
-        width={600}
-        height={400}
-        alt="Optimized image"
-      />
-
-      {/* Responsive image with srcset */}
-      <VFNextResponsiveImage
-        src="https://example.com/image.jpg"
-        widths={[320, 640, 960, 1280, 1920]}
-        sizes="(max-width: 768px) 100vw, 50vw"
-        alt="Responsive image"
-        fill
-      />
-    </div>
-  );
-}
+```javascript
+new VisionFly({
+  apiKey: string,      // Required: Your VisionFly API key
+  apiSecret: string,   // Required: Your VisionFly API secret
+  baseUrl?: string,    // Optional: API base URL (default: https://api.visionfly.ai)
+  cdnUrl?: string      // Optional: CDN URL (default: https://cdn.visionfly.ai)
+})
 ```
 
-## Advanced Usage
+#### Methods
 
-### Image Transformations
+##### getImageUrl(params)
 
-VisionFly supports a wide range of image transformations:
+Transforms an image URL according to the specified parameters.
+
+```javascript
+visionfly.getImageUrl({
+  src: string,         // Required: Source image URL
+  width?: number,      // Optional: Width in pixels
+  height?: number,     // Optional: Height in pixels
+  quality?: number,    // Optional: Image quality (1-100, default: 80)
+  format?: string,     // Optional: Output format (auto, webp, avif, jpeg, png)
+  blur?: number,       // Optional: Blur amount (0-100)
+  sharpen?: number,    // Optional: Sharpen amount (0-100)
+  brightness?: number, // Optional: Brightness adjustment (-100 to 100)
+  contrast?: number,   // Optional: Contrast adjustment (-100 to 100)
+  saturation?: number, // Optional: Saturation adjustment (-100 to 100)
+  hue?: number        // Optional: Hue rotation (0-360)
+})
+```
+
+##### getSrcSet(params)
+
+Generates a responsive srcset for an image.
+
+```javascript
+visionfly.getSrcSet({
+  src: string,         // Required: Source image URL
+  widths?: number[],   // Optional: Array of widths (default: [400, 800, 1200])
+  format?: string,     // Optional: Output format (default: 'auto')
+  quality?: number     // Optional: Image quality (default: 80)
+})
+```
+
+##### uploadImage(params)
+
+Uploads an image to VisionFly.
+
+```javascript
+visionfly.uploadImage({
+  file: File|Blob,     // Required: Image file to upload
+  projectId: string,   // Required: Project ID
+  publicId?: string    // Optional: Custom public ID
+})
+```
+
+##### clearCache()
+
+Clears the URL cache.
+
+```javascript
+visionfly.clearCache();
+```
+
+### React Components
+
+#### VisionFlyProvider
+
+Provider component that makes the VisionFly SDK available to all child components.
+
+```jsx
+<VisionFlyProvider
+  config={{
+    apiKey: string, // Required: Your VisionFly API key
+    apiSecret: string, // Required: Your VisionFly API secret
+  }}
+>
+  {children}
+</VisionFlyProvider>
+```
+
+#### VFImage
+
+Basic optimized image component.
 
 ```jsx
 <VFImage
-  src="https://example.com/image.jpg"
-  width={600}
-  height={400}
-  quality={85} // 1-100
-  format="webp" // 'auto', 'webp', 'avif', 'jpeg', 'png'
-  blur={5} // 0-100
-  sharpen={10} // 0-100
-  brightness={10} // -100 to 100
-  contrast={15} // -100 to 100
-  saturation={-10} // -100 to 100
-  hue={30} // 0-360
-  alt="Enhanced image"
+  src: string,         // Required: Source image URL
+  width: number,       // Required: Width in pixels
+  height: number,      // Required: Height in pixels
+  alt: string,         // Required: Alt text
+  quality?: number,    // Optional: Image quality (1-100)
+  format?: string,     // Optional: Output format
+  blur?: number,       // Optional: Blur amount
+  sharpen?: number,    // Optional: Sharpen amount
+  brightness?: number, // Optional: Brightness adjustment
+  contrast?: number,   // Optional: Contrast adjustment
+  saturation?: number, // Optional: Saturation adjustment
+  hue?: number        // Optional: Hue rotation
 />
 ```
 
-### Art Direction with Responsive Images
+#### VFResponsiveImage
+
+Responsive image component with automatic srcset generation.
 
 ```jsx
 <VFResponsiveImage
-  src="https://example.com/image.jpg"
-  widths={[320, 640, 960, 1280]}
-  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-  format="webp"
-  quality={85}
-  alt="Art directed image"
+  src: string,         // Required: Source image URL
+  widths: number[],    // Required: Array of widths
+  sizes: string,       // Required: Sizes attribute
+  alt: string,         // Required: Alt text
+  quality?: number,    // Optional: Image quality
+  format?: string      // Optional: Output format
 />
 ```
 
-### Bulk Image Upload
+#### VFUploader
+
+Image upload component.
 
 ```jsx
 <VFUploader
-  projectId="your-project-id"
-  multiple={true}
-  onUpload={(results) => {
-    results.forEach((result) => {
-      console.log(`Uploaded: ${result.public_url}`);
-    });
-  }}
-  buttonText="Upload Multiple Images"
+  projectId: string,   // Required: Project ID
+  onUpload: function,  // Required: Upload callback
+  publicId?: string,   // Optional: Custom public ID
+  multiple?: boolean   // Optional: Allow multiple files
 />
 ```
-
-### Custom Upload Button
-
-```jsx
-<VFUploader projectId="your-project-id" onUpload={handleUpload}>
-  <button className="my-custom-button">
-    <span>Choose Image</span>
-    <svg>...</svg>
-  </button>
-</VFUploader>
-```
-
-## Core Concepts
-
-### Image Optimization
-
-VisionFly optimizes images in several ways:
-
-1. **Format Conversion**: Automatically serves images in modern formats like WebP and AVIF
-2. **Resizing**: Delivers images at the exact size needed
-3. **Quality Adjustment**: Balances visual quality with file size
-4. **Visual Enhancements**: Applies transformations like sharpening for better looking images
-
-### Responsive Images
-
-Modern websites need to serve different image sizes to different devices. VisionFly makes this easy by:
-
-1. **Automatic Srcset Generation**: Creates multiple image versions at different sizes
-2. **Sizes Attribute**: Helps browsers choose the right image size
-3. **Easy Integration**: Works with both plain HTML `<img>` tags and framework components
-
-### Security
-
-VisionFly SDK uses secure token-based authentication:
-
-1. **API Keys**: Used only to obtain access tokens
-2. **Access Tokens**: Short-lived tokens for API requests
-3. **Refresh Tokens**: Used to get new access tokens when they expire
-4. **Automatic Refresh**: SDK handles token management behind the scenes
-
-## Benefits for Website Performance
-
-- **Reduced Page Weight**: Optimized images can be 60-80% smaller than originals
-- **Faster Loading**: Smaller images = faster page loads
-- **Better Core Web Vitals**: Improves LCP (Largest Contentful Paint)
-- **SEO Benefits**: Google rewards faster websites with better rankings
-- **Reduced Bandwidth**: Save on hosting costs and bandwidth usage
-- **Improved Mobile Experience**: Faster loading on mobile networks
-
-## Common Use Cases
-
-### E-commerce Product Images
-
-```jsx
-<VFResponsiveImage
-  src="https://example.com/product.jpg"
-  widths={[320, 640, 960]}
-  format="webp"
-  quality={85}
-  alt="Product image"
-/>
-```
-
-### Hero Images
-
-```jsx
-<VFResponsiveImage
-  src="https://example.com/hero.jpg"
-  widths={[768, 1024, 1440, 1920]}
-  sizes="100vw"
-  quality={85}
-  format="webp"
-  alt="Hero image"
-/>
-```
-
-### Image Galleries
-
-```jsx
-{
-  images.map((image) => (
-    <VFImage
-      key={image.id}
-      src={image.url}
-      width={300}
-      height={200}
-      alt={image.alt}
-    />
-  ));
-}
-```
-
-### User-Generated Content
-
-```jsx
-<VFUploader
-  projectId="user-content"
-  publicId={`user-${userId}-${Date.now()}`}
-  onUpload={handleProfileImageUpload}
-  buttonText="Upload Profile Picture"
-/>
-```
-
-## API Reference
-
-Complete API documentation is available at [docs.visionfly.ai](https://docs.visionfly.ai).
 
 ## License
 
-MIT
+ISC

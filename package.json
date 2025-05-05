@@ -2,61 +2,50 @@
   "name": "visionfly-sdk",
   "version": "1.0.0",
   "description": "Official SDK for VisionFly Image API - Image optimization, transformation, and delivery",
-  "source": "src/visionfly-core.js",
   "main": "dist/index.js",
-  "module": "dist/index.modern.js",
-  "unpkg": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
+  "module": "dist/index.esm.js",
+  "source": "src/visionfly-core.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    },
+    "./react": {
+      "import": "./dist/react.esm.js",
+      "require": "./dist/react.js"
+    }
+  },
   "files": [
     "dist",
-    "README.md"
+    "src"
   ],
   "scripts": {
-    "build": "npm run build:types && microbundle src/visionfly-core.js -o dist/index.js && microbundle src/visionfly-react.js -o dist/react.js && microbundle src/visionfly-next.js -o dist/next.js",
-    "build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
-    "dev": "microbundle watch",
-    "prepare": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "preconstruct": {
-    "entrypoints": [
-      "index.js",
-      "react.js",
-      "next.js"
-    ],
-    "exports": true
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
+    "visionfly",
     "image",
     "optimization",
     "cdn",
-    "visionfly",
     "react",
-    "nextjs"
+    "image-processing",
+    "responsive-images"
   ],
-  "author": "Gsharma",
+  "author": "VisionFly",
   "license": "ISC",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/VisionBlocksAI/vision-fly-ai-backend.git"
-  },
-  "bugs": {
-    "url": "https://github.com/VisionBlocksAI/vision-fly-ai-backend/issues"
-  },
-  "homepage": "https://visionfly.ai",
-  "devDependencies": {
-    "@rollup/plugin-babel": "^6.0.4",
-    "@rollup/plugin-commonjs": "^28.0.3",
-    "@rollup/plugin-node-resolve": "^16.0.1",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "microbundle": "^0.15.1",
-    "rollup": "^2.79.2",
-    "typescript": "^5.0.0"
-  },
   "peerDependencies": {
     "react": ">=16.8.0",
-    "next": ">=12.0.0"
+    "react-dom": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.27.1",
+    "@babel/preset-react": "^7.27.1",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-terser": "^0.4.0",
+    "rollup": "^2.79.2"
   }
 }

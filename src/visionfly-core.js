@@ -366,4 +366,4 @@ class VisionFly {
   }
 }
 
-export default VisionFly;
+export { VisionFly };

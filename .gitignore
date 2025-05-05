@@ -1,1 +1,4 @@
 ./node_modules
+__tests__
+src/visionfly-react*
+src/visionfly-next*

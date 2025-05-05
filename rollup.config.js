@@ -1,25 +1,41 @@
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
-import babel from "@rollup/plugin-babel";
 import terser from "@rollup/plugin-terser";
+import babel from "@rollup/plugin-babel";
 
-const createConfig = (input, output) => ({
+const createConfig = (input, output, external = []) => ({
   input,
   output: [
-    { file: `dist/${output}.js`, format: "cjs" },
-    { file: `dist/${output}.esm.js`, format: "es" },
+    {
+      file: output.replace(".esm.js", ".js"),
+      format: "cjs",
+      sourcemap: true,
+    },
+    {
+      file: output,
+      format: "esm",
+      sourcemap: true,
+    },
   ],
-  external: ["react", "react-dom", "next"],
+  external,
   plugins: [
     resolve(),
     commonjs(),
-    babel({ babelHelpers: "bundled" }),
+    babel({
+      babelHelpers: "bundled",
+      presets: ["@babel/preset-react"],
+      extensions: [".js", ".jsx"],
+    }),
     terser(),
   ],
 });
 
 export default [
-  createConfig("src/visionfly-core.js", "index"),
-  createConfig("src/visionfly-react.js", "react"),
-  createConfig("src/visionfly-next.js", "next"),
+  // Core SDK
+  createConfig("src/visionfly-core.js", "dist/index.esm.js"),
+  // React SDK
+  createConfig("src/visionfly-react.jsx", "dist/react.esm.js", [
+    "react",
+    "react-dom",
+  ]),
 ];
