@@ -2,3 +2,9 @@ node_modules
 __tests__
 src/visionfly-react*
 src/visionfly-next*
+dist
+.npmignore
+.DS_Store
+.vscode
+.idea
+.env
