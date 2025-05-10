@@ -8,24 +8,68 @@ Official SDK for VisionFly Image API - Image optimization, transformation, and d
 npm install visionfly-sdk
 ```
 
-## Usage
-
-### Core SDK
+## Quick Start
 
 ```javascript
 import { VisionFly } from "visionfly-sdk";
 
-// Initialize the SDK with your API key and secret
+// Initialize the SDK
 const visionfly = new VisionFly({
   apiKey: "your-api-key",
   apiSecret: "your-api-secret",
-  baseUrl: "https://api.visionfly.ai", // optional
-  cdnUrl: "https://cdn.visionfly.ai", // optional
 });
 
+// Upload an image
+const result = await visionfly.uploadImage({
+  file: imageFile,
+  publicId: "optional-custom-id", // optional
+});
+
+// The result will contain a CDN URL like: cdn.visionfly.ai/user_id/image-name.jpg
+const imageUrl = result.public_url;
+
+// Now you can use this URL for transformations
+const transformedUrl = await visionfly.transformImage({
+  src: imageUrl, // Must be a VisionFly CDN URL
+  width: 800,
+  height: 600,
+});
+```
+
+## Core Features
+
+- Image upload with automatic optimization
+- Image transformation (resize, format conversion, effects)
+- Responsive image generation with srcset
+- Automatic authentication and token management
+
+## Usage Examples
+
+### 1. Image Upload
+
+```javascript
+// Basic upload
+const result = await visionfly.uploadImage({
+  file: imageFile,
+});
+
+// Upload with custom ID
+const result = await visionfly.uploadImage({
+  file: imageFile,
+  publicId: "my-custom-image-name",
+});
+
+// The result will contain a CDN URL like: cdn.visionfly.ai/user_id/image-name.jpg
+console.log(result.public_url);
+```
+
+### 2. Image Transformation
+
+```javascript
 // Get an optimized image URL
-const imageUrl = await visionfly.getImageUrl({
-  src: "https://example.com/image.jpg",
+// Note: src must be a VisionFly CDN URL (from upload)
+const imageUrl = await visionfly.transformImage({
+  src: "cdn.visionfly.ai/user_id/image-name.jpg", // Must be a VisionFly CDN URL
   width: 800,
   height: 600,
   quality: 85,
@@ -37,80 +81,171 @@ const imageUrl = await visionfly.getImageUrl({
   saturation: -10,
   hue: 30,
 });
-
-// Generate a responsive srcset
-const srcsetData = await visionfly.getSrcSet({
-  src: "https://example.com/image.jpg",
-  widths: [400, 800, 1200],
-  format: "webp",
-  quality: 80,
-});
-
-// Upload an image
-const uploadResult = await visionfly.uploadImage({
-  file: imageFile,
-  projectId: "your-project-id",
-  publicId: "optional-custom-id",
-});
-
-// Clear URL cache if needed
-visionfly.clearCache();
 ```
 
-### React Components
+### 3. Responsive Images
+
+```javascript
+// Generate a responsive srcset
+// Note: src must be a VisionFly CDN URL (from upload)
+const srcsetData = await visionfly.getSrcSet({
+  src: "cdn.visionfly.ai/user_id/image-name.jpg", // Must be a VisionFly CDN URL
+  widths: [400, 800, 1200], // Optional: Array of widths or comma-separated string
+  format: "webp", // Optional: Output format (auto, webp, avif, jpeg, png)
+  quality: 80, // Optional: Image quality (1-100)
+});
+
+// The result contains:
+// - srcset: String of responsive image URLs with width descriptors
+// - sizes: Recommended sizes attribute
+// - default: Default image URL for the src attribute
+
+// Use in HTML
+<img
+  src={srcsetData.default}
+  srcSet={srcsetData.srcset}
+  sizes={srcsetData.sizes}
+  alt="Responsive image"
+/>;
+```
+
+### 4. Framework Examples
+
+#### HTML
+
+```html
+<!-- Basic responsive image -->
+<img
+  src="cdn.visionfly.ai/user_id/image-name.jpg"
+  srcset="
+    https://api.visionfly.ai/transform?src=cdn.visionfly.ai/user_id/image-name.jpg&w=400&f=webp&q=80   400w,
+    https://api.visionfly.ai/transform?src=cdn.visionfly.ai/user_id/image-name.jpg&w=800&f=webp&q=80   800w,
+    https://api.visionfly.ai/transform?src=cdn.visionfly.ai/user_id/image-name.jpg&w=1200&f=webp&q=80 1200w
+  "
+  sizes="(max-width: 768px) 100vw, 50vw"
+  alt="Responsive image"
+/>
+
+<!-- Responsive image with different sizes -->
+<img
+  src="cdn.visionfly.ai/user_id/image-name.jpg"
+  srcset="
+    https://api.visionfly.ai/transform?src=cdn.visionfly.ai/user_id/image-name.jpg&w=400&f=webp&q=80   400w,
+    https://api.visionfly.ai/transform?src=cdn.visionfly.ai/user_id/image-name.jpg&w=800&f=webp&q=80   800w,
+    https://api.visionfly.ai/transform?src=cdn.visionfly.ai/user_id/image-name.jpg&w=1200&f=webp&q=80 1200w
+  "
+  sizes="(max-width: 480px) 100vw,
+         (max-width: 768px) 80vw,
+         50vw"
+  alt="Responsive image"
+/>
+```
+
+#### React
 
 ```jsx
-import React from "react";
-import {
-  VisionFlyProvider,
-  VFImage,
-  VFResponsiveImage,
-  VFUploader,
-} from "visionfly-sdk/react";
+import { useState, useEffect } from "react";
+import { VisionFly } from "visionfly-sdk";
 
-// App component with VisionFly setup
-function App() {
+function ResponsiveImage({ imageUrl }) {
+  const [srcsetData, setSrcsetData] = useState(null);
+  const visionfly = new VisionFly({
+    apiKey: "your-api-key",
+    apiSecret: "your-api-secret",
+  });
+
+  useEffect(() => {
+    async function generateSrcset() {
+      try {
+        const data = await visionfly.getSrcSet({
+          src: imageUrl,
+          widths: [400, 800, 1200],
+          format: "webp",
+          quality: 80,
+        });
+        setSrcsetData(data);
+      } catch (error) {
+        console.error("Failed to generate srcset:", error.message);
+      }
+    }
+    generateSrcset();
+  }, [imageUrl]);
+
+  if (!srcsetData) return <div>Loading...</div>;
+
   return (
-    <VisionFlyProvider
-      config={{
-        apiKey: "your-api-key",
-        apiSecret: "your-api-secret",
-      }}
-    >
-      <MyComponent />
-    </VisionFlyProvider>
+    <img
+      src={srcsetData.default}
+      srcSet={srcsetData.srcset}
+      sizes={srcsetData.sizes}
+      alt="Responsive image"
+    />
   );
 }
 
-// Component using VisionFly components
-function MyComponent() {
-  const handleUpload = (result) => {
-    console.log("Upload successful:", result);
-    // Use the uploaded image URL: result.public_url
-  };
+// Usage
+function App() {
+  return <ResponsiveImage imageUrl="cdn.visionfly.ai/user_id/image-name.jpg" />;
+}
+```
+
+#### Next.js
+
+```jsx
+import { VisionFly } from "visionfly-sdk";
+import Image from "next/image";
+
+// Create a VisionFly instance
+const visionfly = new VisionFly({
+  apiKey: process.env.VISIONFLY_API_KEY,
+  apiSecret: process.env.VISIONFLY_API_SECRET,
+});
+
+// Generate srcset data at build time or in getServerSideProps
+export async function getServerSideProps() {
+  try {
+    const srcsetData = await visionfly.getSrcSet({
+      src: "cdn.visionfly.ai/user_id/image-name.jpg",
+      widths: [400, 800, 1200],
+      format: "webp",
+      quality: 80,
+    });
+
+    return {
+      props: {
+        srcsetData,
+      },
+    };
+  } catch (error) {
+    console.error("Failed to generate srcset:", error.message);
+    return {
+      props: {
+        error: error.message,
+      },
+    };
+  }
+}
+
+// Component using Next.js Image
+function ResponsiveImage({ srcsetData, error }) {
+  if (error) return <div>Error: {error}</div>;
 
   return (
-    <div>
-      {/* Basic optimized image */}
-      <VFImage
-        src="https://example.com/image.jpg"
-        width={600}
-        height={400}
-        alt="Optimized image"
-      />
-
-      {/* Responsive image with srcset */}
-      <VFResponsiveImage
-        src="https://example.com/image.jpg"
-        widths={[320, 640, 960, 1280, 1920]}
-        sizes="(max-width: 768px) 100vw, 50vw"
-        alt="Responsive image"
-      />
-
-      {/* Image uploader */}
-      <VFUploader projectId="your-project-id" onUpload={handleUpload} />
-    </div>
+    <Image
+      src={srcsetData.default}
+      srcSet={srcsetData.srcset}
+      sizes={srcsetData.sizes}
+      alt="Responsive image"
+      width={1200} // Max width
+      height={800} // Max height
+      priority // Optional: Load image immediately
+    />
   );
+}
+
+// Usage
+export default function Page({ srcsetData, error }) {
+  return <ResponsiveImage srcsetData={srcsetData} error={error} />;
 }
 ```
 
@@ -131,13 +266,30 @@ new VisionFly({
 
 #### Methods
 
-##### getImageUrl(params)
+##### uploadImage(params)
 
-Transforms an image URL according to the specified parameters.
+Uploads an image to VisionFly.
 
 ```javascript
-visionfly.getImageUrl({
-  src: string,         // Required: Source image URL
+visionfly.uploadImage({
+  file: File|Blob,     // Required: Image file to upload
+  publicId?: string    // Optional: Custom public ID
+})
+```
+
+Returns a Promise that resolves to an object containing:
+
+- `public_url`: The CDN URL where the image can be accessed (format: cdn.visionfly.ai/user_id/image-name.jpg)
+- Additional metadata about the uploaded image
+
+##### transformImage(params)
+
+Transforms an image URL according to the specified parameters.
+Note: The source URL must be a VisionFly CDN URL (from upload).
+
+```javascript
+visionfly.transformImage({
+  src: string,         // Required: VisionFly CDN URL (from upload)
   width?: number,      // Optional: Width in pixels
   height?: number,     // Optional: Height in pixels
   quality?: number,    // Optional: Image quality (1-100, default: 80)
@@ -154,27 +306,22 @@ visionfly.getImageUrl({
 ##### getSrcSet(params)
 
 Generates a responsive srcset for an image.
+Note: The source URL must be a VisionFly CDN URL (from upload).
 
 ```javascript
 visionfly.getSrcSet({
-  src: string,         // Required: Source image URL
-  widths?: number[],   // Optional: Array of widths (default: [400, 800, 1200])
-  format?: string,     // Optional: Output format (default: 'auto')
-  quality?: number     // Optional: Image quality (default: 80)
+  src: string,         // Required: VisionFly CDN URL (from upload)
+  widths?: number[]|string, // Optional: Array of widths or comma-separated string (default: [400,800,1200])
+  format?: string,     // Optional: Output format (auto, webp, avif, jpeg, png, default: 'auto')
+  quality?: number     // Optional: Image quality (1-100, default: 80)
 })
 ```
 
-##### uploadImage(params)
+Returns a Promise that resolves to an object containing:
 
-Uploads an image to VisionFly.
-
-```javascript
-visionfly.uploadImage({
-  file: File|Blob,     // Required: Image file to upload
-  projectId: string,   // Required: Project ID
-  publicId?: string    // Optional: Custom public ID
-})
-```
+- `srcset`: String of responsive image URLs with width descriptors
+- `sizes`: Recommended sizes attribute
+- `default`: Default image URL for the src attribute
 
 ##### clearCache()
 
@@ -184,70 +331,27 @@ Clears the URL cache.
 visionfly.clearCache();
 ```
 
-### React Components
+## Error Handling
 
-#### VisionFlyProvider
+The SDK throws errors with descriptive messages for common issues:
 
-Provider component that makes the VisionFly SDK available to all child components.
+- Invalid file types during upload
+- Authentication failures
+- Network errors
+- Invalid parameters
+- Invalid source URLs (must be VisionFly CDN URLs)
 
-```jsx
-<VisionFlyProvider
-  config={{
-    apiKey: string, // Required: Your VisionFly API key
-    apiSecret: string, // Required: Your VisionFly API secret
-  }}
->
-  {children}
-</VisionFlyProvider>
-```
+Example error handling:
 
-#### VFImage
-
-Basic optimized image component.
-
-```jsx
-<VFImage
-  src: string,         // Required: Source image URL
-  width: number,       // Required: Width in pixels
-  height: number,      // Required: Height in pixels
-  alt: string,         // Required: Alt text
-  quality?: number,    // Optional: Image quality (1-100)
-  format?: string,     // Optional: Output format
-  blur?: number,       // Optional: Blur amount
-  sharpen?: number,    // Optional: Sharpen amount
-  brightness?: number, // Optional: Brightness adjustment
-  contrast?: number,   // Optional: Contrast adjustment
-  saturation?: number, // Optional: Saturation adjustment
-  hue?: number        // Optional: Hue rotation
-/>
-```
-
-#### VFResponsiveImage
-
-Responsive image component with automatic srcset generation.
-
-```jsx
-<VFResponsiveImage
-  src: string,         // Required: Source image URL
-  widths: number[],    // Required: Array of widths
-  sizes: string,       // Required: Sizes attribute
-  alt: string,         // Required: Alt text
-  quality?: number,    // Optional: Image quality
-  format?: string      // Optional: Output format
-/>
-```
-
-#### VFUploader
-
-Image upload component.
-
-```jsx
-<VFUploader
-  projectId: string,   // Required: Project ID
-  onUpload: function,  // Required: Upload callback
-  publicId?: string,   // Optional: Custom public ID
-  multiple?: boolean   // Optional: Allow multiple files
-/>
+```javascript
+try {
+  const result = await visionfly.uploadImage({
+    file: imageFile,
+  });
+  console.log("Upload successful:", result);
+} catch (error) {
+  console.error("Upload failed:", error.message);
+}
 ```
 
 ## License

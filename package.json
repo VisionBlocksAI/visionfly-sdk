@@ -1,6 +1,6 @@
 {
   "name": "visionfly-sdk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Official SDK for VisionFly Image API - Image optimization, transformation, and delivery",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -22,7 +22,8 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "jest"
   },
   "keywords": [
     "visionfly",
@@ -41,11 +42,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
     "@babel/preset-react": "^7.27.1",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-terser": "^0.4.0",
+    "jest": "^29.7.0",
     "rollup": "^2.79.2"
   }
 }

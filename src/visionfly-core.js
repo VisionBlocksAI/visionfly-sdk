@@ -172,7 +172,7 @@ class VisionFly {
    * @param {number} [params.hue] - Hue rotation (0-360)
    * @returns {Promise<string>} CDN URL
    */
-  async getImageUrl(params) {
+  async transformImage(params) {
     // Generate a cache key from the params
     const cacheKey = JSON.stringify(params);
 
@@ -224,10 +224,10 @@ class VisionFly {
   /**
    * Generate a responsive srcset for an image
    * @param {Object} params - Srcset parameters
-   * @param {string} params.src - Source image URL
+   * @param {string} params.src - Source image URL (must be a VisionFly CDN URL)
    * @param {Array<number>|string} [params.widths=[400,800,1200]] - Array or comma-separated string of widths
-   * @param {string} [params.format='auto'] - Output format
-   * @param {number} [params.quality=80] - Image quality
+   * @param {string} [params.format='auto'] - Output format (auto, webp, avif, jpeg, png)
+   * @param {number} [params.quality=80] - Image quality (1-100)
    * @returns {Promise<Object>} Srcset data with processed URLs
    */
   async getSrcSet(params) {
@@ -237,6 +237,11 @@ class VisionFly {
       format = "auto",
       quality = 80,
     } = params;
+
+    // Validate that URL is a VisionFly CDN URL
+    if (!src.startsWith("https://cdn.visionfly.ai/")) {
+      throw new Error("Source URL must be a VisionFly CDN URL");
+    }
 
     // Convert widths array to string if needed
     const widthsStr = Array.isArray(widths) ? widths.join(",") : widths;
@@ -253,104 +258,34 @@ class VisionFly {
       `/generate/srcset?${apiParams.toString()}`
     );
 
-    // Process each URL in the srcset to get actual CDN URLs
-    const srcsetParts = srcsetData.srcset.split(",").map((part) => part.trim());
-    const processedParts = await Promise.all(
-      srcsetParts.map(async (part) => {
-        // Split part into URL and width descriptor
-        const [url, widthDesc] = part.split(" ");
-
-        // Parse URL to get transform parameters
-        const urlObj = new URL(url);
-        const transformParams = {};
-
-        // Convert API params back to SDK format
-        const reverseParamMap = {
-          src: "src",
-          w: "width",
-          h: "height",
-          q: "quality",
-          f: "format",
-          blur: "blur",
-          sharp: "sharpen",
-          bri: "brightness",
-          con: "contrast",
-          sat: "saturation",
-          hue: "hue",
-        };
-
-        // Extract params from URL
-        for (const [key, value] of urlObj.searchParams.entries()) {
-          const paramKey = reverseParamMap[key] || key;
-          transformParams[paramKey] = value;
-        }
-
-        // Get CDN URL for this width
-        const cdnUrl = await this.getImageUrl(transformParams);
-
-        // Return new srcset entry with CDN URL
-        return `${cdnUrl} ${widthDesc}`;
-      })
-    );
-
-    // Process default URL
-    const defaultUrlObj = new URL(srcsetData.default);
-    const defaultParams = {};
-
-    // Convert API params back to SDK format for default URL
-    const reverseParamMap = {
-      src: "src",
-      w: "width",
-      h: "height",
-      q: "quality",
-      f: "format",
-      blur: "blur",
-      sharp: "sharpen",
-      bri: "brightness",
-      con: "contrast",
-      sat: "saturation",
-      hue: "hue",
-    };
-
-    // Extract params from default URL
-    for (const [key, value] of defaultUrlObj.searchParams.entries()) {
-      const paramKey = reverseParamMap[key] || key;
-      defaultParams[paramKey] = value;
-    }
-
-    // Get CDN URL for default
-    const defaultCdnUrl = await this.getImageUrl(defaultParams);
-
-    // Return processed srcset data
-    return {
-      srcset: processedParts.join(", "),
-      sizes: srcsetData.sizes,
-      default: defaultCdnUrl,
-    };
+    return srcsetData;
   }
 
   /**
    * Upload an image to VisionFly
    * @param {Object} params - Upload parameters
    * @param {File|Blob} params.file - Image file to upload
-   * @param {string} params.projectId - Project ID
    * @param {string} [params.publicId] - Optional custom public ID
-   * @returns {Promise<Object>} Upload result
+   * @returns {Promise<Object>} Upload result with metadata and CDN URL
    */
   async uploadImage(params) {
-    const { file, projectId, publicId } = params;
+    const { file, publicId } = params;
+
+    // Validate file type
+    if (!file.type || !file.type.startsWith("image/")) {
+      throw new Error("Invalid file type. Only image files are allowed.");
+    }
 
     // Create form data
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("project_id", projectId);
 
     if (publicId) {
       formData.append("public_id", publicId);
     }
 
     // Upload the image
-    return this._request("/upload/", {
+    return this._request("/upload", {
       method: "POST",
       body: formData,
       // Don't set Content-Type header for FormData
