@@ -8,9 +8,15 @@ Official SDK for [VisionFly Image API](https://www.visionfly.ai) - Image optimiz
 npm install visionfly-sdk
 ```
 
+## Requirements
+
+- Node.js version 12 or higher
+- For CommonJS projects, you'll need to use dynamic imports or add `"type": "module"` to your package.json
+
 ## Quick Start
 
 ```javascript
+// ES Module import
 import { VisionFly } from "visionfly-sdk";
 
 // Initialize the SDK
@@ -35,6 +41,22 @@ const transformedUrl = await visionfly.transformImage({
   height: 600,
 });
 ```
+
+### Using in CommonJS Projects
+
+If you're using CommonJS, you can use dynamic imports:
+
+```javascript
+// Using dynamic import
+const { VisionFly } = await import("visionfly-sdk");
+
+const visionfly = new VisionFly({
+  apiKey: "your-api-key",
+  apiSecret: "your-api-secret",
+});
+```
+
+Or add `"type": "module"` to your package.json and use ES module imports.
 
 ## Core Features
 
